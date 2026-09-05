@@ -1,0 +1,117 @@
+EDuke32 r(?)
+Built Mar 13 2026 13:15:54, GCC 10.3.0, 32-bit 
+Application parameters: -gDNF.GRP -xDNFGAME.con -game_dir ux0:data/DNF/ -cfg ux0:data/DNF/dnf_controls.cfg 
+Using CON file "DNFGAME.con".
+Using ux0:data/DNF/ for game data
+Using ux0:data/DNF/ for game data
+Initializing SDL system interface (compiled against SDL version 1.2.16, found version 1.2.16)
+Using "vita" video driver
+Using config file "ux0:data/DNF/dnf_controls.cfg".
+Searching for game data...
+Found no recognized game data!
+Using ux0:data/DNF/ for game data
+Using "DUKE3D.GRP" as main game data file.
+Using file "DNF.GRP" as game data.
+Compiling: DNFGAME.con (231999 bytes)
+Including: DEFS.CON (38749 bytes)
+Including: USER.CON (46992 bytes)
+Including: EBIKE.CON (30596 bytes)
+EBIKE.CON: In actor `THEEBIKE':
+EBIKE.CON:894: warning: empty `ifvare' branch
+EBIKE.CON:894: warning: empty `else' branch
+Including: DNF.CON (36825 bytes)
+DNF.CON: At top level:
+DNF.CON:6: warning: duplicate definition `x' ignored.
+DNF.CON:7: warning: duplicate definition `y' ignored.
+DNF.CON:8: warning: duplicate definition `z' ignored.
+DNF.CON:18: warning: duplicate definition `TEMP3' ignored.
+DNF.CON:113: warning: duplicate definition `monstflags' ignored.
+DNF.CON:114: warning: duplicate definition `hitag' ignored.
+DNF.CON:138: warning: duplicate definition `SCENESTART' ignored.
+DNF.CON: In actor `GUIDE':
+DNF.CON:333: warning: `nullop' found without `else'
+DNF.CON:334: warning: empty `ifspritepal' branch
+DNF.CON:334: warning: empty `else' branch
+DNF.CON: In actor `COMPUTER':
+DNF.CON:449: warning: expected define, found action.
+DNF.CON:458: warning: `nullop' found without `else'
+DNF.CON: In actor `TILECHANGER':
+DNF.CON:1063: warning: duplicate definition `z' ignored.
+DNFGAME.con: In actor `ORGANTIC':
+DNFGAME.con:5211: warning: found `else' with no `if'.
+DNFGAME.con: In state `checklizhit':
+DNFGAME.con:6429: warning: `nullop' found without `else'
+DNFGAME.con:6431: warning: `nullop' found without `else'
+DNFGAME.con: In state `pigshootenemystate':
+DNFGAME.con:7353: warning: found `else' with no `if'.
+DNFGAME.con: In actor `MINITANK':
+DNFGAME.con:10488: warning: found `else' with no `if'.
+DNFGAME.con: In state `edftroopcode':
+DNFGAME.con:11589: warning: malformed `else' branch
+DNFGAME.con: At top level:
+DNFGAME.con:11621: warning: duplicate definition `OWNER' ignored.
+DNFGAME.con:11623: warning: duplicate definition `OCSTAT' ignored.
+DNFGAME.con: In state `checklamedronehitstate':
+DNFGAME.con:12123: warning: found `else' with no `if'.
+Found 24 warning(s), 0 error(s).
+Script compiled in 444ms, 129416 bytes
+Initialized 96.0M cache
+Loading "duke3d.def"
+
+Definitions file "duke3d.def" loaded in 11 ms.
+Initializing OSD...
+1 joystick(s) found
+  1. PSVita Controller
+Joystick 1 has 4 axes, 12 buttons, and 0 hat(s).
+Loading clip map: _clipshape0.map
+Loaded clip map.
+Executing "autoexec.cfg"
+"r_visibility" is not a valid command or cvar
+"r_detailmapping" is not a valid command or cvar
+"r_glowmapping" is not a valid command or cvar
+"vid_vsync" is not a valid command or cvar
+DNF: videoSetMode PSP2 bypass 480x272 bpp=8
+Initializing music...
+Initializing sound... 64 voices, 2 channels, 16-bit 48000 Hz
+Sound hlminhal.voc(#23) not found!
+Sound hlmexhal.voc(#24) not found!
+Sound yes.voc(#45) not found!
+Sound fan.voc(#77) not found!
+Sound hover.voc(#80) not found!
+Sound turrrm.voc(#145) not found!
+Sound turrrg.voc(#146) not found!
+Sound turrat.voc(#147) not found!
+Sound b3atk01.voc(#152) not found!
+Sound turrpn.voc(#161) not found!
+Sound turrdy.voc(#162) not found!
+Sound b3atk01.voc(#176) not found!
+Sound vpiss2.voc(#182) not found!
+Sound jacuzzi2.voc(#322) not found!
+Sound joke.voc(#397) not found!
+Sound LIFESBICH.VOC(#560) not found!
+Sound NOTDUKE.VOC(#605) not found!
+Sound DONKEY.VOC(#610) not found!
+DNF: videoBeginDrawing fp=0x81e60000 fb=0x81e60000 xdim=480 ydim=272
+Executing "/intro.cfg"
+"r_usenewshading" is not a valid command or cvar
+"r_shadescale" is not a valid command or cvar
+Sound hlminhal.voc(#23) not found!
+Sound hlmexhal.voc(#24) not found!
+Sound yes.voc(#45) not found!
+Sound fan.voc(#77) not found!
+Sound hover.voc(#80) not found!
+Sound turrrm.voc(#145) not found!
+Sound turrrg.voc(#146) not found!
+Sound turrat.voc(#147) not found!
+Sound b3atk01.voc(#152) not found!
+Sound turrpn.voc(#161) not found!
+Sound turrdy.voc(#162) not found!
+Sound b3atk01.voc(#176) not found!
+Sound vpiss2.voc(#182) not found!
+Sound jacuzzi2.voc(#322) not found!
+Sound joke.voc(#397) not found!
+Sound LIFESBICH.VOC(#560) not found!
+Sound NOTDUKE.VOC(#605) not found!
+Sound DONKEY.VOC(#610) not found!
+Cache time: 2212ms
+E1L1: 
