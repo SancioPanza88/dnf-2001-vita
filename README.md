@@ -64,6 +64,29 @@ tutto verificato sui sorgenti upstream EDuke32-Vita e coperto da `tests/test_pat
 | Clock CPU stock | Best-effort **500MHz ARM** con fallback 444 (sicuro: se rifiutato resta 444) |
 | Cvar invalide che spammavano warning | `AUTOEXEC.CFG` contiene solo cvar valide in questa build |
 
+## Perché il rendering resta software (nota GPU)
+
+Indagine fatta prima di toccare il renderer (settembre 2026), conclusioni:
+
+- Esiste un solo port (`Rinnegatamante/EDuke32-Vita`), **zero riferimenti a vitaGL**
+  in tutto il codice e nessun fork con renderer GPU.
+- Il driver SDL1-Vita non crea nemmeno un contesto video 2D
+  (`SDL_SetVideoMode` fallisce sempre — per questo lo bypassiamo); un contesto
+  OpenGL non è ottenibile da questa base.
+- La build usa `USE_OPENGL=0`; i sorgenti Polymost (l'unico renderer GPU di
+  EDuke32, OpenGL 1.x fixed-function) sono presenti ma dormienti e non
+  compilabili per PSP2.
+- Portare Polymost su vitaGL/OpenGL ES significherebbe riscrivere il renderer
+  (~migliaia di righe GL 1.x) **senza possibilità di testarlo** (serve una Vita
+  fisica per verificare ogni frame): rischio quasi certo di schermo nero/crash.
+- Inoltre Polymost è molto più pesante del classic renderer: sulla PowerVR
+  SGX543 del 2012 andrebbe con ogni probabilità **peggio** dei 60fps, non meglio.
+
+Per questo il port resta sul classic renderer 8-bit con tutto il possibile già
+spostato sulla GPU: render 320×200 → upscale GPU 3.0×/2.72× con filtro LINEAR,
+conversione palette P8→BGR in hardware, presentazione vsyncata a 60Hz.
+Vedi sezione Performance sopra per i colli CPU rimossi (audio, frame cap, clock).
+
 Nota onesta: il mod DNF 2001 è molto più pesante del Duke3D base (mappe grandi, tanti
 sprite/voxel, CON enorme). Nelle scene più pesanti su ARM 444MHz + renderer software
 ci possono essere cali: con vsync il pacing resta pulito (60/30 invece di judder).
