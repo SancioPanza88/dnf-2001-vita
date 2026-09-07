@@ -90,6 +90,12 @@ python3 "${SCRIPT_DIR}/scripts/patch_performance.py" "${SDLAYER_FILE}"
 # Also patch videoSetMode for correct resolution
 python3 "${SCRIPT_DIR}/scripts/patch_videomode.py" "${SDLAYER_FILE}" "${BUILD_DIR}/source/build/src/sdlayer12.cpp" "${BUILD_DIR}/source/duke3d/src/config.cpp"
 
+# DNF_VITA_60FPS: vsync pacing (vblank wait) + best-effort 500MHz clocks
+python3 "${SCRIPT_DIR}/scripts/patch_framerate.py" "${SDLAYER_FILE}"
+
+# DNF_VITA_AUDIO: 22050Hz / 32 voices engine defaults (4x less mixing work)
+python3 "${SCRIPT_DIR}/scripts/patch_audio_defaults.py" "${BUILD_DIR}/source/duke3d/src/config.cpp"
+
 # Patch controls for FPS layout (config-level axis mapping)
 echo "  Patching controls..."
 python3 "${SCRIPT_DIR}/scripts/patch_controls.py" "${BUILD_DIR}/source/duke3d/src/_functio.h" "${BUILD_DIR}/source/duke3d/src/config.cpp"

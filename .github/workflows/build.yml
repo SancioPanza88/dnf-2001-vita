@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Syntax check (all scripts + tests)
+        run: python -m compileall -q scripts tests
+
+      - name: Shell syntax check (build script)
+        run: bash -n build_vita.sh
+
+      - name: Patch self-tests (60fps suite)
+        run: python -m unittest discover -s tests -v
+
+      - name: 60fps checklist (repo contents)
+        run: |
+          grep -q "snd_mixrate 22050" AUTOEXEC.CFG
+          grep -q "r_maxfps 60" AUTOEXEC.CFG
+          grep -q "patch_framerate.py" build_vita.sh
+          grep -q "patch_audio_defaults.py" build_vita.sh
+          grep -q "vita2d_set_vblank_wait(1)" scripts/patch_framerate.py
+          grep -q "MixRate = 22050" scripts/patch_audio_defaults.py
+          echo "60fps checklist OK"

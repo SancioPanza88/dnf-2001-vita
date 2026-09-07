@@ -91,12 +91,13 @@ def patch_sdlayer(filepath):
     // NOTE: Do NOT call vita2d_fini() here - the engine uses gpu_texture,
     // fb_texture and framebuffer globals for rendering every frame
     
-    // DNF_VITA_OVERCLOCK: Max out CPU/GPU/Bus clocks for best performance
-    scePowerSetArmClockFrequency(444);
+    // DNF_VITA_OVERCLOCK: best-effort 500MHz ARM, fallback 444 (stock max).
+    // scePowerSetArmClockFrequency returns != 0 when the rate is rejected.
+    if (scePowerSetArmClockFrequency(500) != 0) scePowerSetArmClockFrequency(444);
     scePowerSetBusClockFrequency(222);
     scePowerSetGpuClockFrequency(222);
     scePowerSetGpuXbarClockFrequency(166);
-    initprintf("DNF: Clocks set to CPU=444 BUS=222 GPU=222 XBAR=166\\n");
+    initprintf("DNF: Clocks set BUS=222 GPU=222 XBAR=166\\n");
     
     char *dnf_argv[] = {
         "",                    // argv[0] placeholder

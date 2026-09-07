@@ -50,6 +50,25 @@ Create the folder `ux0:data/DNF/` on your Vita and copy these files into it:
 ### Step 3: Launch
 Open the **DNF 2001 Vita** bubble on your home screen.
 
+## Performance (60fps)
+
+Il gioco punta a **60fps stabili** (display Vita = 60Hz, vsync attivo). Cosa è stato fatto,
+tutto verificato sui sorgenti upstream EDuke32-Vita e coperto da `tests/test_patches.py`:
+
+| Causa lag | Fix |
+|---|---|
+| Rendering software a 480×272 (130k px) | Render interno **320×200** (64k px, metà pixel), upscale GPU 3.0×/2.72× a 960×544 (`patch_performance.py` + `patch_videomode.py`) |
+| `vita2d_set_vblank_wait(0)` = frame rate libero (tearing + pacing irregolare) | vblank wait **ON** = presentazione agganciata ai 60Hz (`patch_framerate.py`) |
+| Nessun frame cap nel engine | `r_maxfps 60` in `AUTOEXEC.CFG` (cvar verificata in `osdcmds.cpp`) |
+| Mixer software 64 voci × 48000Hz stereo | Default engine **22050Hz / 32 voci** (`patch_audio_defaults.py` su `config.cpp`) + `snd_mixrate 22050` / `snd_numvoices 32` in `AUTOEXEC.CFG` (~4× meno lavoro di mixing) |
+| Clock CPU stock | Best-effort **500MHz ARM** con fallback 444 (sicuro: se rifiutato resta 444) |
+| Cvar invalide che spammavano warning | `AUTOEXEC.CFG` contiene solo cvar valide in questa build |
+
+Nota onesta: il mod DNF 2001 è molto più pesante del Duke3D base (mappe grandi, tanti
+sprite/voxel, CON enorme). Nelle scene più pesanti su ARM 444MHz + renderer software
+ci possono essere cali: con vsync il pacing resta pulito (60/30 invece di judder).
+Chiudi altre app e usa una microSD veloce per i tempi di cache (`Cache time` nel log).
+
 ## Controls
 
 | Vita Button | Action |
