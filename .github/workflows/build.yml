@@ -53,12 +53,13 @@ jobs:
 
       - name: Install VitaSDK libraries
         run: |
+          apt-get update && apt-get install -y subversion pkg-config
           export VITASDK=/usr/local/vitasdk
           export PATH="$VITASDK/bin:$PATH"
           vdpm --version || true
           for p in sdl sdl_mixer vita2d flac libogg libvorbis mpg123 mikmod speexdsp libpng jpeg zlib; do
             echo "== vdpm $p =="
-            vdpm "$p" || echo "WARN: vdpm $p failed, continuing"
+            if vdpm "$p"; then echo "OK $p"; else echo "WARN: vdpm $p failed, continuing"; fi
           done
 
       - name: Build stable VPK (software renderer)
@@ -87,12 +88,13 @@ jobs:
 
       - name: Install VitaSDK libraries (+vitaGL)
         run: |
+          apt-get update && apt-get install -y subversion pkg-config
           export VITASDK=/usr/local/vitasdk
           export PATH="$VITASDK/bin:$PATH"
           vdpm --version || true
           for p in sdl sdl_mixer vita2d vitagl flac libogg libvorbis mpg123 mikmod speexdsp libpng jpeg zlib; do
             echo "== vdpm $p =="
-            vdpm "$p" || echo "WARN: vdpm $p failed, continuing"
+            if vdpm "$p"; then echo "OK $p"; else echo "WARN: vdpm $p failed, continuing"; fi
           done
 
       - name: Build EXPERIMENTAL vitaGL VPK (GPU renderer)
