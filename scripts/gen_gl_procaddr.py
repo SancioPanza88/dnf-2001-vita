@@ -4,10 +4,14 @@ Generate dnf_gl_procaddr.{h,cpp}: SDL_GL_GetProcAddress replacement for vitaGL.
 WHY: EDuke32 loads every GL function through glad function pointers fed by
 SDL_GL_GetProcAddress. SDL1-Vita implements no GL, but vitaGL links its GL
 symbols statically - so we resolve names to &glFunction addresses at build
-time by parsing the INSTALLED vitaGL headers ($VITASDK/.../include/GL/).
+time by parsing the INSTALLED vitaGL headers.
 
 Usage:
-    python3 gen_gl_procaddr.py <vitasdk-gl-include-dir> <out-dir>
+    python3 gen_gl_procaddr.py <out-dir> <header-or-dir> [<header-or-dir> ...]
+
+Each input is either a single header (e.g. .../include/vitaGL.h) or a
+directory scanned for *.h. Missing inputs are skipped with a warning;
+at least one GL symbol must be found overall.
 
 Output:
     <out-dir>/dnf_gl_procaddr.h    -> void *DNF_GL_GetProcAddress(const char *);
@@ -20,33 +24,38 @@ import sys
 FUNC_RE = re.compile(r'\b(gl[A-Za-z0-9]+)\s*\(')
 
 
-def collect_functions(include_dir):
+def collect_from_file(path, funcs, seen):
+    with open(path, 'r', errors='replace') as f:
+        for line in f:
+            s = line.strip()
+            # skip comments / preprocessor / typedefs
+            if not s or s.startswith(('#', '/', '*', 'typedef')):
+                continue
+            m = FUNC_RE.search(s)
+            if m and m.group(1) not in seen:
+                seen.add(m.group(1))
+                funcs.append(m.group(1))
+
+
+def collect_functions(inputs):
     funcs = []
     seen = set()
-    if not os.path.isdir(include_dir):
-        print(f"  ERROR: GL include dir not found: {include_dir}")
-        print("  Install vitaGL first (vdpm vitagl) with VitaSDK set up.")
-        sys.exit(1)
-    for fname in sorted(os.listdir(include_dir)):
-        if not fname.endswith('.h'):
-            continue
-        with open(os.path.join(include_dir, fname), 'r', errors='replace') as f:
-            for line in f:
-                s = line.strip()
-                # skip comments / preprocessor / typedefs
-                if not s or s.startswith(('#', '/', '*', 'typedef')):
-                    continue
-                m = FUNC_RE.search(s)
-                if m and m.group(1) not in seen:
-                    seen.add(m.group(1))
-                    funcs.append(m.group(1))
+    for inp in inputs:
+        if os.path.isfile(inp) and inp.endswith('.h'):
+            collect_from_file(inp, funcs, seen)
+        elif os.path.isdir(inp):
+            for fname in sorted(os.listdir(inp)):
+                if fname.endswith('.h'):
+                    collect_from_file(os.path.join(inp, fname), funcs, seen)
+        else:
+            print(f"  WARN: GL input not found, skipping: {inp}")
     return funcs
 
 
-def generate(include_dir, out_dir):
-    funcs = collect_functions(include_dir)
+def generate(out_dir, inputs):
+    funcs = collect_functions(inputs)
     if not funcs:
-        print(f"  ERROR: no GL functions parsed from {include_dir}")
+        print("  ERROR: no GL functions parsed from %s" % (inputs,))
         sys.exit(1)
 
     os.makedirs(out_dir, exist_ok=True)
@@ -75,7 +84,7 @@ def generate(include_dir, out_dir):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print(f"Usage: {sys.argv[0]} <vitasdk-gl-include-dir> <out-dir>")
+        print(f"Usage: {sys.argv[0]} <out-dir> <header-or-dir> [...]")
         sys.exit(1)
 
-    generate(sys.argv[1], sys.argv[2])
+    generate(sys.argv[1], sys.argv[2:])

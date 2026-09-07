@@ -221,26 +221,35 @@ vita2d_texture *fb_texture;
 
 
 class TestGLProcaddrGen(unittest.TestCase):
+    HDR = ('GLAPI void GLAPIENTRY glViewport (GLint x, GLint y, GLsizei w, GLsizei h);\n'
+           'GLAPI void GLAPIENTRY glViewport (GLint x, GLint y, GLsizei w, GLsizei h);\n'
+           'extern void GLAPIENTRY glClear (GLbitfield mask);\n'
+           'void glCustomFn(int a);\n'
+           '#define GL_TRUE 1\n'
+           'typedef unsigned int GLenum;\n'
+           '// glFake is a comment, not a declaration\n')
+
     def test_parses_headers(self):
         import tempfile
         mod = load('gen_gl_procaddr')
         d = tempfile.mkdtemp()
         try:
             with open(os.path.join(d, 'gl.h'), 'w') as f:
-                f.write('GLAPI void GLAPIENTRY glViewport (GLint x, GLint y, GLsizei w, GLsizei h);\n'
-                        'GLAPI void GLAPIENTRY glViewport (GLint x, GLint y, GLsizei w, GLsizei h);\n'
-                        'extern void GLAPIENTRY glClear (GLbitfield mask);\n'
-                        '#define GL_TRUE 1\n'
-                        'typedef unsigned int GLenum;\n'
-                        '// glFake is a comment, not a declaration\n')
+                f.write(self.HDR)
+            with open(os.path.join(d, 'extra.h'), 'w') as f:
+                f.write('void glExtraFn(void);\n')
             out = tempfile.mkdtemp()
-            mod.generate(d, out)
+            mod.generate(out, [os.path.join(d, 'gl.h'),
+                               os.path.join(d, 'extra.h'),
+                               os.path.join(d, 'missing.h')])
             with open(os.path.join(out, 'dnf_gl_procaddr.h')) as f:
                 self.assertIn('DNF_GL_GetProcAddress', f.read())
             with open(os.path.join(out, 'dnf_gl_procaddr.cpp')) as f:
                 cpp = f.read()
             self.assertIn('"glViewport"', cpp)
             self.assertIn('"glClear"', cpp)
+            self.assertIn('"glCustomFn"', cpp)
+            self.assertIn('"glExtraFn"', cpp)
             self.assertNotIn('glFake', cpp)
             self.assertEqual(cpp.count('"glViewport"'), 1)  # deduped
         finally:
@@ -251,7 +260,7 @@ class TestGLProcaddrGen(unittest.TestCase):
     def test_missing_dir_fails_loud(self):
         mod = load('gen_gl_procaddr')
         with self.assertRaises(SystemExit):
-            mod.generate('/nonexistent-gl-include', tempfile.mkdtemp())
+            mod.generate(tempfile.mkdtemp(), ['/nonexistent-gl-include'])
 
 
 class TestGLRendererPatch(unittest.TestCase):
@@ -278,12 +287,15 @@ class TestGLRendererPatch(unittest.TestCase):
             with open(os.path.join(d, 'source/build/src/sdlayer12.cpp')) as f:
                 s12 = f.read()
             self.assertIn('vglInitExtended(0, 320, 200', s12)
-            self.assertIn('setrendermode(REND_POLYMOST)', s12)
+            self.assertIn('vglWaitVblankStart(1)', s12)
+            self.assertIn('0x800000', s12)
+            self.assertIn('#include <psp2/gxm.h>', s12)
+            self.assertIn('videoSetRenderMode(REND_POLYMOST)', s12)
             self.assertIn('DNF_GL_GetProcAddress', s12)
             self.assertIn('#include <vitaGL.h>', s12)
             with open(os.path.join(d, 'source/build/src/sdlayer.cpp')) as f:
                 sl = f.read()
-            self.assertIn('vglSwapBuffers(1)', sl)
+            self.assertIn('vglSwapBuffers(0)', sl)
             with open(os.path.join(d, 'Common.mak')) as f:
                 cmk = f.read()
             self.assertIn('ifeq ($(DNF_VITA_GL),1)', cmk)

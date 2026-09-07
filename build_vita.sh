@@ -288,9 +288,11 @@ if [ "${BUILD_GL:-0}" = "1" ]; then
     python3 "${SCRIPT_DIR}/scripts/patch_audio_defaults.py" "${GL_BUILD_DIR}/source/duke3d/src/config.cpp"
     python3 "${SCRIPT_DIR}/scripts/patch_controls.py" "${GL_BUILD_DIR}/source/duke3d/src/_functio.h" "${GL_BUILD_DIR}/source/duke3d/src/config.cpp"
     python3 "${SCRIPT_DIR}/scripts/patch_glrenderer.py" "${GL_BUILD_DIR}"
+    # gen reads the installed vitaGL.h plus the GL dir (if present)
     python3 "${SCRIPT_DIR}/scripts/gen_gl_procaddr.py" \
-        "${VITASDK}/arm-vita-eabi/include/GL" \
-        "${GL_BUILD_DIR}/source/build/src"
+        "${GL_BUILD_DIR}/source/build/src" \
+        "${VITASDK}/arm-vita-eabi/include/vitaGL.h" \
+        "${VITASDK}/arm-vita-eabi/include/GL"
 
     echo "[GL 3/4] Building (USE_OPENGL via DNF_VITA_GL=1)..."
     sed -i 's/-mcpu=cortex-a9 -g -ffast-math/-mcpu=cortex-a9 -ffast-math/g' Common.mak
@@ -302,11 +304,14 @@ if [ "${BUILD_GL:-0}" = "1" ]; then
     if ! grep -q 'DNF_VITA_NEWLIB' Common.mak; then
         echo 'LINKERFLAGS += -Wl,--allow-multiple-definition # DNF_VITA_NEWLIB' >> Common.mak
     fi
+    # NOTE: DNF_VITA_GL=1 is passed ON the make command line (not just env):
+    # EDuke32's makefiles re-exec sub-makes, and env-only vars get lost.
+    # Command-line vars propagate to every sub-make via MAKEFLAGS.
+    # (USE_OPENGL=0 here is overridden by Common.mak, which flips it to 1
+    # when DNF_VITA_GL=1 - see patch_glrenderer.py.)
     DNF_VITA_GL=1 make -j$(nproc) PLATFORM=PSP2 RELEASE=1 USE_OPENGL=0 POLYMER=0 NETCODE=0 HAVE_GTK2=0 \
         STARTUP_WINDOW=0 USE_LIBVPX=0 LUNATIC=0 SIMPLE_MENU=1 \
-        OPTLEVEL=3
-    # NOTE: USE_OPENGL=0 on the command line is overridden by Common.mak, which
-    # flips it to 1 when DNF_VITA_GL=1 is in the environment (see patch_glrenderer.py).
+        OPTLEVEL=3 DNF_VITA_GL=1
 
     echo "[GL 4/4] Packaging experimental VPK..."
     GL_ELF=""

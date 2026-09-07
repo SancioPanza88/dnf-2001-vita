@@ -39,6 +39,7 @@ jobs:
           grep -q "MixRate = 22050" scripts/patch_audio_defaults.py
           grep -q "patch_glrenderer.py" build_vita.sh
           grep -q "gen_gl_procaddr.py" build_vita.sh
+          grep -q "OPTLEVEL=3 DNF_VITA_GL=1" build_vita.sh
           echo "60fps checklist OK"
 
   vpk-stable:
@@ -57,7 +58,7 @@ jobs:
           export VITASDK=/usr/local/vitasdk
           export PATH="$VITASDK/bin:$PATH"
           vdpm --version || true
-          for p in sdl sdl_mixer vita2d flac libogg libvorbis mpg123 mikmod speexdsp libpng jpeg zlib; do
+          for p in sdl sdl_mixer libvita2d flac libogg libvorbis mpg123 libmikmod speexdsp libjpeg-turbo; do
             echo "== vdpm $p =="
             if vdpm "$p"; then echo "OK $p"; else echo "WARN: vdpm $p failed, continuing"; fi
           done
@@ -92,7 +93,7 @@ jobs:
           export VITASDK=/usr/local/vitasdk
           export PATH="$VITASDK/bin:$PATH"
           vdpm --version || true
-          for p in sdl sdl_mixer vita2d vitagl flac libogg libvorbis mpg123 mikmod speexdsp libpng jpeg zlib; do
+          for p in sdl sdl_mixer libvita2d vitaGL vitaShaRK flac libogg libvorbis mpg123 libmikmod speexdsp libjpeg-turbo; do
             echo "== vdpm $p =="
             if vdpm "$p"; then echo "OK $p"; else echo "WARN: vdpm $p failed, continuing"; fi
           done

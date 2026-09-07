@@ -89,6 +89,7 @@ def patch_glrenderer(build_dir):
     new_inc = ('#include <SDL/SDL_events.h>\n'
                '#ifdef DNF_VITA_GL\n'
                '#include <vitaGL.h>\n'
+               '#include <psp2/gxm.h>\n'
                '#include "dnf_gl_procaddr.h"\n'
                '#endif\n')
     _need(s12, old_inc, 'SDL_events include', sdlayer12)
@@ -106,14 +107,15 @@ def patch_glrenderer(build_dir):
         '    {\n'
         '        extern void *DNF_GL_GetProcAddress(const char *);\n'
         '        nogl = 0;\n'
-        '        vglInitExtended(0, 320, 200, 4*1024*1024, SCE_GXM_MULTISAMPLE_NONE);\n'
+        '        vglInitExtended(0, 320, 200, 0x800000, SCE_GXM_MULTISAMPLE_NONE);\n'
+        '        vglWaitVblankStart(1); // vsync pacing (see vitaGL samples)\n'
         '        initprintf("DNF_VITA_GL: vitaGL init 320x200\\n");\n'
         '        xres = xdim = 320; yres = ydim = 200; bpp = 32;\n'
         '        fullscreen = fs; bytesperline = 320; numpages = 1; lockcount = 0;\n'
         '        modechange = 1; videomodereset = 0;\n'
         '        sdl_surface = (SDL_Surface *)0x1;\n'
         '        gladLoadGLLoader((GLADloadproc)DNF_GL_GetProcAddress);\n'
-        '        setrendermode(REND_POLYMOST);\n'
+        '        videoSetRenderMode(REND_POLYMOST); // NOT setrendermode (see build.h)\n'
         '        setvideomode_sdlcommonpost(xres, yres, 32, fs, regrab);\n'
         '        return 0;\n'
         '    }\n'
@@ -132,6 +134,7 @@ def patch_glrenderer(build_dir):
     new_v2d = ('#include <vita2d.h>\n'
                '#ifdef DNF_VITA_GL\n'
                '#include <vitaGL.h>\n'
+               '#include <psp2/gxm.h>\n'
                '#endif\n')
     _need(sl, old_v2d, 'vita2d include', sdlayer)
     sl = sl.replace(old_v2d, new_v2d, 1)
@@ -143,9 +146,12 @@ def patch_glrenderer(build_dir):
                 '    UNREFERENCED_PARAMETER(w);\n'
                 '\n'
                 '    if (offscreenrendering) return;\n')
+    # NOTE: vglSwapBuffers takes has_commondialog, NOT vsync (see vitaGL.h);
+    # vsync comes from vglWaitVblankStart(1) at init. Plain 0/1 literals
+    # avoid any GL type-visibility issues in the engine TU.
     new_show = (old_show +
                 '#ifdef DNF_VITA_GL\n'
-                '    if (getrendermode() >= REND_POLYMOST) { vglSwapBuffers(1); return; }\n'
+                '    if (videoGetRenderMode() >= REND_POLYMOST) { vglSwapBuffers(0); return; }\n'
                 '#endif\n')
     _need(sl, old_show, 'videoShowFrame head', sdlayer)
     sl = sl.replace(old_show, new_show, 1)
