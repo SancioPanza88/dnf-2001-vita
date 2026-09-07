@@ -136,6 +136,13 @@ if ! grep -q '\-O[0-3]' Common.mak; then
     sed -i 's/^CFLAGS\s*=/CFLAGS = -O3/' Common.mak
 fi
 
+# DNF_VITA_NEWLIB: modern VitaSDK newlib already provides chdir(), which
+# collides with EDuke32-Vita's own shim at link time (GCC 15 + LTO).
+# --allow-multiple-definition keeps the link green (first definition wins).
+if ! grep -q 'DNF_VITA_NEWLIB' Common.mak; then
+    echo 'LINKERFLAGS += -Wl,--allow-multiple-definition # DNF_VITA_NEWLIB' >> Common.mak
+fi
+
 # Build with PSP2 target (OPTLEVEL=3 for max optimization)
 make -j$(nproc) PLATFORM=PSP2 RELEASE=1 USE_OPENGL=0 POLYMER=0 NETCODE=0 HAVE_GTK2=0 \
     STARTUP_WINDOW=0 USE_LIBVPX=0 LUNATIC=0 SIMPLE_MENU=1 \
@@ -290,6 +297,9 @@ if [ "${BUILD_GL:-0}" = "1" ]; then
     sed -i 's/-O0\b/-O3/g; s/-O1\b/-O3/g; s/-O2\b/-O3/g' Common.mak
     if ! grep -q '\-O[0-3]' Common.mak; then
         sed -i 's/^CFLAGS\s*=/CFLAGS = -O3/' Common.mak
+    fi
+    if ! grep -q 'DNF_VITA_NEWLIB' Common.mak; then
+        echo 'LINKERFLAGS += -Wl,--allow-multiple-definition # DNF_VITA_NEWLIB' >> Common.mak
     fi
     DNF_VITA_GL=1 make -j$(nproc) PLATFORM=PSP2 RELEASE=1 USE_OPENGL=0 POLYMER=0 NETCODE=0 HAVE_GTK2=0 \
         STARTUP_WINDOW=0 USE_LIBVPX=0 LUNATIC=0 SIMPLE_MENU=1 \
