@@ -153,10 +153,12 @@ def patch_performance(filepath):
     # =========================================================================
     # Forcing modechange=1 every frame re-ran calc_ylookup() each videoBeginDrawing() and
     # crushed FPS. Only request modechange when we actually correct a drift away from 320x200.
+    # Classic 8-bit only (bpp == 8): the experimental vitaGL renderer (32-bit)
+    # manages its own viewport - never force 320x200 under it.
     guard = (
         '\n#ifdef __PSP2__\n'
         ' // DNF_VITA_RESOLUTION_GUARD (see patch_performance.py)\n'
-        ' {\n'
+        ' if (bpp == 8) {\n'
         ' const int32_t dnf_w = 320, dnf_h = 200;\n'
         ' const int need_lookup = (xres != dnf_w || yres != dnf_h);\n'
         ' xres = dnf_w; yres = dnf_h; xdim = dnf_w; ydim = dnf_h;\n'

@@ -37,4 +37,73 @@ jobs:
           grep -q "patch_audio_defaults.py" build_vita.sh
           grep -q "vita2d_set_vblank_wait(1)" scripts/patch_framerate.py
           grep -q "MixRate = 22050" scripts/patch_audio_defaults.py
+          grep -q "patch_glrenderer.py" build_vita.sh
+          grep -q "gen_gl_procaddr.py" build_vita.sh
           echo "60fps checklist OK"
+
+  vpk-stable:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: vitasdk/vitasdk:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install VitaSDK libraries
+        run: |
+          export VITASDK=/usr/local/vitasdk
+          export PATH="$VITASDK/bin:$PATH"
+          vdpm --version || true
+          for p in sdl sdl_mixer vita2d flac libogg libvorbis mpg123 mikmod speexdsp libpng jpeg zlib; do
+            echo "== vdpm $p =="
+            vdpm "$p" || echo "WARN: vdpm $p failed, continuing"
+          done
+
+      - name: Build stable VPK (software renderer)
+        run: |
+          export VITASDK=/usr/local/vitasdk
+          export PATH="$VITASDK/bin:$PATH"
+          bash build_vita.sh
+
+      - name: Upload stable VPK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DNF2001_Vita-stable
+          path: DNF2001_Vita.vpk
+          if-no-files-found: error
+
+  vpk-gl:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    continue-on-error: true
+    container:
+      image: vitasdk/vitasdk:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install VitaSDK libraries (+vitaGL)
+        run: |
+          export VITASDK=/usr/local/vitasdk
+          export PATH="$VITASDK/bin:$PATH"
+          vdpm --version || true
+          for p in sdl sdl_mixer vita2d vitagl flac libogg libvorbis mpg123 mikmod speexdsp libpng jpeg zlib; do
+            echo "== vdpm $p =="
+            vdpm "$p" || echo "WARN: vdpm $p failed, continuing"
+          done
+
+      - name: Build EXPERIMENTAL vitaGL VPK (GPU renderer)
+        run: |
+          export VITASDK=/usr/local/vitasdk
+          export PATH="$VITASDK/bin:$PATH"
+          BUILD_GL=1 bash build_vita.sh
+
+      - name: Upload experimental GL VPK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DNF2001_Vita-GL-experimental
+          path: DNF2001_Vita_GL.vpk
+          if-no-files-found: warn

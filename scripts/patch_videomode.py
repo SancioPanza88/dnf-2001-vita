@@ -24,7 +24,9 @@ PSP2_BLOCK = (
     '#ifdef __PSP2__\n'
     '    // DNF_VITA_SKIP_SDL_SETVIDEOMODE: bypass ALL SDL/OpenGL video init on Vita.\n'
     '    // SDL_SetVideoMode is not supported by the Vita SDL1 driver and always fails.\n'
-    '    // Render at 320x200 (Duke3D native), upscale to 960x544 in videoShowFrame.\n'
+    '    // Classic 8-bit only (c <= 8): 32-bit modes fall through to the vitaGL\n'
+    '    // renderer (DNF_VITA_GL experimental build, see patch_glrenderer.py).\n'
+    '    if (c <= 8) {\n'
     '    initprintf("DNF: videoSetMode PSP2 bypass %dx%d bpp=%d\\n", x, y, c);\n'
     '    xres  = 320;\n'
     '    yres  = 200;\n'
@@ -38,6 +40,7 @@ PSP2_BLOCK = (
     '    modechange = 1;\n'
     '    videomodereset = 0;\n'
     '    return 0;\n'
+    '    }\n'
     '#endif\n'
 )
 

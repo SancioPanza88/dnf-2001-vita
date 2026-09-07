@@ -64,7 +64,34 @@ tutto verificato sui sorgenti upstream EDuke32-Vita e coperto da `tests/test_pat
 | Clock CPU stock | Best-effort **500MHz ARM** con fallback 444 (sicuro: se rifiutato resta 444) |
 | Cvar invalide che spammavano warning | `AUTOEXEC.CFG` contiene solo cvar valide in questa build |
 
-## Perché il rendering resta software (nota GPU)
+## Renderer GPU (sperimentale, serve test su hardware)
+
+Stato: la build stabile resta software. In più c'è un percorso **sperimentale
+vitaGL/Polymost** (480×272×32) che avanza a iterazioni con test su Vita vera.
+
+### Come provarlo
+
+1. Dalla pagina **Actions** dell'ultimo run verde scarica `DNF2001_Vita-GL-experimental`
+   (`DNF2001_Vita_GL.vpk`) — oppure compila in locale con VitaSDK + `vdpm vitagl`:
+   `BUILD_GL=1 ./build_vita.sh`.
+2. Installa il VPK **accanto** alla build stabile (Title ID diverso: `DNF2001GL`,
+   usa gli stessi dati in `ux0:data/DNF/`).
+3. Riporta: si avvia? menu? 3D? fps? schermo nero/crash? + contenuto di
+   `ux0:data/DNF/dnf2001_gl.log`.
+
+### Come funziona (tecnica)
+
+- `USE_OPENGL=1` solo con `DNF_VITA_GL=1` (`patch_glrenderer.py` su `Common.mak`;
+  la build stabile non è toccata).
+- SDL1-Vita non crea contesti GL: `videoSetMode()` inizializza vitaGL
+  direttamente (`vglInitExtended` 480×272), carica glad tramite
+  `DNF_GL_GetProcAddress` (generato da `gen_gl_procaddr.py` dagli header vitaGL
+  installati) e forza `setrendermode(REND_POLYMOST)`; il present va su
+  `vglSwapBuffers`.
+- Le patch 8-bit (bypass 320×200, guard) sono GL-aware: con `bpp > 8` non
+  intervengono.
+
+## Perché il rendering stabile resta software (nota GPU)
 
 Indagine fatta prima di toccare il renderer (settembre 2026), conclusioni:
 

@@ -222,6 +222,112 @@ vita-pack-vpk -s sce_sys/param.sfo -b eboot.bin \
 vita-pack-vpk -s sce_sys/param.sfo -b eboot.bin \
     "${SCRIPT_DIR}/DNF2001_Vita.vpk"
 
+# ── Step 6 (optional): EXPERIMENTAL vitaGL renderer build ────────────────────
+# Set BUILD_GL=1 to also produce DNF2001_Vita_GL.vpk (GPU renderer, needs
+# hardware testing - see README "Renderer GPU"). Requires vitaGL installed
+# (vdpm vitagl) and $VITASDK set. Uses a separate build dir so the stable
+# build above is never touched.
+if [ "${BUILD_GL:-0}" = "1" ]; then
+    echo ""
+    echo "============================================="
+    echo "  EXPERIMENTAL vitaGL renderer build"
+    echo "============================================="
+
+    GL_BUILD_DIR="${SCRIPT_DIR}/build_eduke32_gl"
+    GL_TITLE_ID="DNF2001GL"
+    GL_APP_TITLE="DNF 2001 GL"
+
+    if [ -z "${VITASDK:-}" ]; then
+        echo "ERROR: \$VITASDK not set (needed for vitaGL headers)."
+        exit 1
+    fi
+    if [ ! -d "${VITASDK}/arm-vita-eabi/include/GL" ]; then
+        echo "ERROR: vitaGL headers not found. Install with: vdpm vitagl"
+        exit 1
+    fi
+
+    if [ ! -d "${GL_BUILD_DIR}" ]; then
+        echo "[GL 1/4] Cloning EDuke32-Vita (GL build dir)..."
+        git clone --depth 1 "${EDUKE32_REPO}" "${GL_BUILD_DIR}"
+    else
+        echo "[GL 1/4] EDuke32-Vita GL dir exists, reusing..."
+    fi
+    cd "${GL_BUILD_DIR}"
+
+    echo "[GL 2/4] Patching (stable patches + GL renderer)..."
+    GL_SDLAYER="source/build/src/sdlayer.cpp"
+    if ! grep -q "DNF_VITA_STANDALONE" "${GL_SDLAYER}"; then
+        python3 "${SCRIPT_DIR}/scripts/patch_sdlayer.py" "${GL_SDLAYER}"
+    fi
+    GL_GAME="source/duke3d/src/game.cpp"
+    if ! grep -q "DNF_VITA_STANDALONE" "${GL_GAME}"; then
+        sed -i 's|OSD_SetLogFile("ux0:data/EDuke32/eduke32.log");|OSD_SetLogFile("ux0:data/DNF/dnf2001_gl.log"); // DNF_VITA_STANDALONE|g' "${GL_GAME}"
+    fi
+    GL_COMMON="source/duke3d/src/common.cpp"
+    if [ -f "${GL_COMMON}" ] && ! grep -q "DNF_VITA_STANDALONE" "${GL_COMMON}"; then
+        sed -i 's|ux0:data/EDuke32|ux0:data/DNF|g' "${GL_COMMON}"
+        sed -i '1s/^/\/\/ DNF_VITA_STANDALONE patched\n/' "${GL_COMMON}"
+    fi
+    find source/ -name "*.cpp" -o -name "*.c" -o -name "*.h" | while read f; do
+        if grep -q "ux0:data/EDuke32" "$f" && ! grep -q "DNF_VITA_STANDALONE" "$f"; then
+            sed -i 's|ux0:data/EDuke32|ux0:data/DNF|g' "$f"
+        fi
+    done
+    sed -i 's|sceKernelCreateThread("EDuke32"|sceKernelCreateThread("DNF2001"|g' "${GL_SDLAYER}"
+    python3 "${SCRIPT_DIR}/scripts/patch_performance.py" "${GL_SDLAYER}"
+    python3 "${SCRIPT_DIR}/scripts/patch_videomode.py" "${GL_SDLAYER}" "${GL_BUILD_DIR}/source/build/src/sdlayer12.cpp" "${GL_BUILD_DIR}/source/duke3d/src/config.cpp"
+    python3 "${SCRIPT_DIR}/scripts/patch_framerate.py" "${GL_SDLAYER}"
+    python3 "${SCRIPT_DIR}/scripts/patch_audio_defaults.py" "${GL_BUILD_DIR}/source/duke3d/src/config.cpp"
+    python3 "${SCRIPT_DIR}/scripts/patch_controls.py" "${GL_BUILD_DIR}/source/duke3d/src/_functio.h" "${GL_BUILD_DIR}/source/duke3d/src/config.cpp"
+    python3 "${SCRIPT_DIR}/scripts/patch_glrenderer.py" "${GL_BUILD_DIR}"
+    python3 "${SCRIPT_DIR}/scripts/gen_gl_procaddr.py" \
+        "${VITASDK}/arm-vita-eabi/include/GL" \
+        "${GL_BUILD_DIR}/source/build/src"
+
+    echo "[GL 3/4] Building (USE_OPENGL via DNF_VITA_GL=1)..."
+    sed -i 's/-mcpu=cortex-a9 -g -ffast-math/-mcpu=cortex-a9 -ffast-math/g' Common.mak
+    sed -i 's|-lSDL_mixer -lSDL -lmikmod -lspeexdsp|-lSDL_mixer -lFLAC -lvorbisfile -lvorbis -logg -lSDL -lmikmod -lspeexdsp|g' GNUmakefile
+    sed -i 's/-O0\b/-O3/g; s/-O1\b/-O3/g; s/-O2\b/-O3/g' Common.mak
+    if ! grep -q '\-O[0-3]' Common.mak; then
+        sed -i 's/^CFLAGS\s*=/CFLAGS = -O3/' Common.mak
+    fi
+    DNF_VITA_GL=1 make -j$(nproc) PLATFORM=PSP2 RELEASE=1 USE_OPENGL=0 POLYMER=0 NETCODE=0 HAVE_GTK2=0 \
+        STARTUP_WINDOW=0 USE_LIBVPX=0 LUNATIC=0 SIMPLE_MENU=1 \
+        OPTLEVEL=3
+    # NOTE: USE_OPENGL=0 on the command line is overridden by Common.mak, which
+    # flips it to 1 when DNF_VITA_GL=1 is in the environment (see patch_glrenderer.py).
+
+    echo "[GL 4/4] Packaging experimental VPK..."
+    GL_ELF=""
+    for f in eduke32.elf duke3d.elf *.elf; do
+        if [ -f "$f" ]; then GL_ELF="$f"; break; fi
+    done
+    if [ -z "${GL_ELF}" ]; then
+        echo "ERROR: No GL ELF file found! Experimental build failed."
+        exit 1
+    fi
+    vita-elf-create "${GL_ELF}" dnf2001gl.velf
+    vita-make-fself -s dnf2001gl.velf eboot.bin
+    vita-mksfoex -s TITLE_ID="${GL_TITLE_ID}" -d ATTRIBUTE2=12 "${GL_APP_TITLE}" param.sfo
+    GL_VPK_DIR="${SCRIPT_DIR}/vpk_contents_gl"
+    rm -rf "${GL_VPK_DIR}"
+    mkdir -p "${GL_VPK_DIR}/sce_sys/livearea/contents"
+    cp eboot.bin param.sfo "${GL_VPK_DIR}/" 2>/dev/null || cp eboot.bin "${GL_VPK_DIR}/eboot.bin"
+    cp param.sfo "${GL_VPK_DIR}/sce_sys/param.sfo"
+    cp "${VPK_DIR}/sce_sys/icon0.png" "${GL_VPK_DIR}/sce_sys/icon0.png" 2>/dev/null || true
+    cp "${VPK_DIR}/sce_sys/livearea/contents/"* "${GL_VPK_DIR}/sce_sys/livearea/contents/" 2>/dev/null || true
+    cd "${GL_VPK_DIR}"
+    vita-pack-vpk -s sce_sys/param.sfo -b eboot.bin \
+        "${SCRIPT_DIR}/DNF2001_Vita_GL.vpk"
+
+    echo ""
+    echo "============================================="
+    echo "  EXPERIMENTAL GL BUILD COMPLETE!"
+    echo "  VPK: ${SCRIPT_DIR}/DNF2001_Vita_GL.vpk"
+    echo "  Install NEXT TO the stable build and report results (see README)."
+    echo "============================================="
+fi
+
 echo ""
 echo "============================================="
 echo "  BUILD COMPLETE!"
