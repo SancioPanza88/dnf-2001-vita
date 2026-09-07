@@ -76,8 +76,12 @@ vitaGL/Polymost** (480×272×32) che avanza a iterazioni con test su Vita vera.
    `BUILD_GL=1 ./build_vita.sh`.
 2. Installa il VPK **accanto** alla build stabile (Title ID diverso: `DNF2001GL`,
    usa gli stessi dati in `ux0:data/DNF/`).
-3. Riporta: si avvia? menu? 3D? fps? schermo nero/crash? + contenuto di
-   `ux0:data/DNF/dnf2001_gl.log`.
+3. **NOVITÀ**: copia anche `dnf_gl.cfg` (nella root del repo) dentro `ux0:data/DNF/`
+   — è la config performance del renderer GL (detail/glow/models/hightile OFF,
+   audio 22050Hz). Senza di essa il test non è valido.
+4. Riporta: fps nella scena iniziale? guardando un muro? e con quali righe di
+   `dnf_gl.cfg` commentate (metti `//` davanti per riattivare: models, hightile,
+   detailmapping, glowmapping)? + contenuto di `ux0:data/DNF/dnf2001_gl.log`.
 
 ### Come funziona (tecnica)
 

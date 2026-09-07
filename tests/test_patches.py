@@ -277,7 +277,7 @@ class TestGLRendererPatch(unittest.TestCase):
             mod.patch_glrenderer(d)
             with open(os.path.join(d, 'source/build/src/sdlayer12.cpp')) as f:
                 s12 = f.read()
-            self.assertIn('vglInitExtended(0, 480, 272', s12)
+            self.assertIn('vglInitExtended(0, 320, 200', s12)
             self.assertIn('setrendermode(REND_POLYMOST)', s12)
             self.assertIn('DNF_GL_GetProcAddress', s12)
             self.assertIn('#include <vitaGL.h>', s12)
@@ -313,6 +313,41 @@ class TestGLRendererPatch(unittest.TestCase):
                 mod.patch_glrenderer(d)
         finally:
             shutil.rmtree(d, ignore_errors=True)
+
+
+class TestGLArgsPatch(unittest.TestCase):
+    ARGV_FIXTURE = ('    char *dnf_argv[] = {\n'
+                    '        "",\n'
+                    '        "-gDNF.GRP",\n'
+                    '        "-xDNFGAME.con",\n'
+                    '        "-game_dir",\n'
+                    '        "ux0:data/DNF/",\n'
+                    '        "-noautoload"          // Skip autoload for faster startup\n'
+                    '    };\n'
+                    '    return app_main(6, dnf_argv);\n')
+
+    def test_adds_cfg(self):
+        mod = load('patch_gl_args')
+        path = write_tmp(self.ARGV_FIXTURE)
+        try:
+            mod.patch_gl_args(path)
+            with open(path) as f:
+                out = f.read()
+            self.assertIn('"ux0:data/DNF/dnf_gl.cfg"', out)
+            self.assertIn('return app_main(8, dnf_argv);', out)
+            # idempotent
+            mod.patch_gl_args(path)
+        finally:
+            os.unlink(path)
+
+    def test_missing_fails_loud(self):
+        mod = load('patch_gl_args')
+        path = write_tmp('// nothing relevant\n')
+        try:
+            with self.assertRaises(SystemExit):
+                mod.patch_gl_args(path)
+        finally:
+            os.unlink(path)
 
 
 class TestVideomodeGLAware(unittest.TestCase):

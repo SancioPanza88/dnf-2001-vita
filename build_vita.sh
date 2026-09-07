@@ -266,6 +266,7 @@ if [ "${BUILD_GL:-0}" = "1" ]; then
     if ! grep -q "DNF_VITA_STANDALONE" "${GL_SDLAYER}"; then
         python3 "${SCRIPT_DIR}/scripts/patch_sdlayer.py" "${GL_SDLAYER}"
     fi
+    python3 "${SCRIPT_DIR}/scripts/patch_gl_args.py" "${GL_SDLAYER}"
     GL_GAME="source/duke3d/src/game.cpp"
     if ! grep -q "DNF_VITA_STANDALONE" "${GL_GAME}"; then
         sed -i 's|OSD_SetLogFile("ux0:data/EDuke32/eduke32.log");|OSD_SetLogFile("ux0:data/DNF/dnf2001_gl.log"); // DNF_VITA_STANDALONE|g' "${GL_GAME}"
