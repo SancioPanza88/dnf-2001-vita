@@ -285,7 +285,10 @@ class TestGLRendererPatch(unittest.TestCase):
                 sl = f.read()
             self.assertIn('vglSwapBuffers(1)', sl)
             with open(os.path.join(d, 'Common.mak')) as f:
-                self.assertIn('ifeq ($(DNF_VITA_GL),1)', f.read())
+                cmk = f.read()
+            self.assertIn('ifeq ($(DNF_VITA_GL),1)', cmk)
+            self.assertIn('override USE_OPENGL := 1', cmk)
+            self.assertIn('COMPILERFLAGS += -DDNF_VITA_GL', cmk)
             with open(os.path.join(d, 'GNUmakefile')) as f:
                 gm = f.read()
             self.assertIn('dnf_gl_procaddr.cpp', gm)

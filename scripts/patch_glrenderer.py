@@ -46,18 +46,26 @@ def patch_glrenderer(build_dir):
         mk = f.read()
     old_use = ('else ifeq ($(PLATFORM),PSP2)\n'
                '    override USE_OPENGL := 0\n')
+    # NOTE: plain `USE_OPENGL := 1` loses against the USE_OPENGL=0 passed on
+    # the make command line (build_vita.sh) - `override` wins over both.
     new_use = ('else ifeq ($(PLATFORM),PSP2)\n'
                '    ifeq ($(DNF_VITA_GL),1)\n'
-               '        USE_OPENGL := 1\n'
-               '        COMPILERFLAGS += -DDNF_VITA_GL\n'
+               '        override USE_OPENGL := 1\n'
                '    else\n'
                '        override USE_OPENGL := 0\n'
                '    endif\n')
     _need(mk, old_use, 'PSP2 USE_OPENGL block', common)
     mk = mk.replace(old_use, new_use, 1)
+    # NOTE: COMPILERFLAGS is reset with `:=` later in Common.mak (line ~487),
+    # so the -D flag must be appended at EOF, after every reset.
+    mk += ('\n# DNF_VITA_GL: compiler flag for the experimental vitaGL renderer.\n'
+           '# Appended at EOF on purpose: COMPILERFLAGS is reset with := above.\n'
+           'ifeq ($(DNF_VITA_GL),1)\n'
+           '    COMPILERFLAGS += -DDNF_VITA_GL\n'
+           'endif\n')
     with open(common, 'w') as f:
         f.write(mk)
-    print("    [OK] Common.mak: USE_OPENGL conditional (DNF_VITA_GL=1)")
+    print("    [OK] Common.mak: USE_OPENGL conditional + EOF -DDNF_VITA_GL")
 
     # --- 2. GNUmakefile: generated TU + vitagl link ---
     with open(gnumake) as f:
